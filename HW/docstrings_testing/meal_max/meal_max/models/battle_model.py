@@ -12,16 +12,15 @@ configure_logger(logger)
 
 class BattleModel:
     """
-    A class to manage a playlist of songs.
+    A class to manage a battle of meals.
 
     Attributes:
-        current_track_number (int): The current track number being played.
-        playlist (List[Song]): The list of songs in the playlist.
+        playlist (List[Meal]): The list of meals in the battle.
 
     """
     def __init__(self):
         """
-        Initializes the PlaylistModel with an empty playlist and the current track set to 1.
+        Initializes the BattleModel with an empty list of meals.
         """
         self.combatants: List[Meal] = []
 
@@ -33,8 +32,8 @@ class BattleModel:
             song (Song): the song to add to the playlist.
 
         Raises:
-            TypeError: If the song is not a valid Song instance.
-            ValueError: If a song with the same 'id' already exists.
+            TypeError: If the meal is not a valid meal instance.
+            ValueError: If not enough combatants in battle.
         """
         logger.info("Two meals enter, one meal leaves!")
 
@@ -90,26 +89,20 @@ class BattleModel:
 
     def clear_combatants(self):
         """
-        Removes a song from the playlist by its song ID.
-
-        Args:
-            song_id (int): The ID of the song to remove from the playlist.
-
-        Raises:
-            ValueError: If the playlist is empty or the song ID is invalid.
+        Removes the meals from the battle
         """
         logger.info("Clearing the combatants list.")
         self.combatants.clear()
 
     def get_battle_score(self, combatant: Meal) -> float:
         """
-        Retrieves a song from the playlist by its song ID.
+        Retrieves a battle score for a combatant in the BattleModel instance
 
         Args:
-            song_id (int): The ID of the song to retrieve.
+            combatant (Meal): The ID of the song to retrieve.
 
         Raises:
-            ValueError: If the playlist is empty or the song is not found.
+            ValueError: If the combantant is empty or not found.
         """
         difficulty_modifier = {"HIGH": 1, "MED": 2, "LOW": 3}
 
@@ -127,20 +120,20 @@ class BattleModel:
 
     def get_combatants(self) -> List[Meal]:
         """
-        Returns a list of all songs in the playlist.
+        Returns a list of all meals in the BattleModel instance.
         """
         logger.info("Retrieving current list of combatants.")
         return self.combatants
 
     def prep_combatant(self, combatant_data: Meal):
         """
-        Retrieves a song from the playlist by its track number (1-indexed).
+        Adds a combatant meal to a battle
 
         Args:
-            track_number (int): The track number of the song to retrieve.
+            combatant_data (Meal): the combantant to add to the list
 
         Raises:
-            ValueError: If the playlist is empty or the track number is invalid.
+            ValueError: If the list is full or the combatant_data is invalid.
         """
         if len(self.combatants) >= 2:
             logger.error("Attempted to add combatant '%s' but combatants list is full", combatant_data.meal)

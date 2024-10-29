@@ -28,7 +28,7 @@ class Meal:
 
 def create_meal(meal: str, cuisine: str, price: float, difficulty: str) -> None:
     """
-    Creates a new song in the songs table.
+    Creates a new in the songs table.
 
     Args:
         artist (str): The artist's name.
