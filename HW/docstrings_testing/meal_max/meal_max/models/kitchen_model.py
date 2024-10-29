@@ -27,6 +27,21 @@ class Meal:
 
 
 def create_meal(meal: str, cuisine: str, price: float, difficulty: str) -> None:
+    """
+    Creates a new song in the songs table.
+
+    Args:
+        artist (str): The artist's name.
+        title (str): The song title.
+        year (int): The year the song was released.
+        genre (str): The song genre.
+        duration (int): The duration of the song in seconds.
+
+    Raises:
+        ValueError: If year or duration are invalid.
+        sqlite3.IntegrityError: If a song with the same compound key (artist, title, year) already exists.
+        sqlite3.Error: For any other database errors.
+    """
     if not isinstance(price, (int, float)) or price <= 0:
         raise ValueError(f"Invalid price: {price}. Price must be a positive number.")
     if difficulty not in ['LOW', 'MED', 'HIGH']:
@@ -53,6 +68,16 @@ def create_meal(meal: str, cuisine: str, price: float, difficulty: str) -> None:
 
 
 def delete_meal(meal_id: int) -> None:
+    """
+    Soft deletes a song from the catalog by marking it as deleted.
+
+    Args:
+        song_id (int): The ID of the song to delete.
+
+    Raises:
+        ValueError: If the song with the given ID does not exist or is already marked as deleted.
+        sqlite3.Error: If any database error occurs.
+    """
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -76,6 +101,20 @@ def delete_meal(meal_id: int) -> None:
         raise e
 
 def get_leaderboard(sort_by: str="wins") -> dict[str, Any]:
+    """
+    Retrieves a song from the catalog by its compound key (artist, title, year).
+
+    Args:
+        artist (str): The artist of the song.
+        title (str): The title of the song.
+        year (int): The year of the song.
+
+    Returns:
+        Song: The Song object corresponding to the compound key.
+
+    Raises:
+        ValueError: If the song is not found or is marked as deleted.
+    """
     query = """
         SELECT id, meal, cuisine, price, difficulty, battles, wins, (wins * 1.0 / battles) AS win_pct
         FROM meals WHERE deleted = false AND battles > 0
@@ -117,6 +156,18 @@ def get_leaderboard(sort_by: str="wins") -> dict[str, Any]:
         raise e
 
 def get_meal_by_id(meal_id: int) -> Meal:
+    """
+    Retrieves a song from the catalog by its song ID.
+
+    Args:
+        song_id (int): The ID of the song to retrieve.
+
+    Returns:
+        Song: The Song object corresponding to the song_id.
+
+    Raises:
+        ValueError: If the song is not found or is marked as deleted.
+    """
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -138,6 +189,20 @@ def get_meal_by_id(meal_id: int) -> Meal:
 
 
 def get_meal_by_name(meal_name: str) -> Meal:
+    """
+    Retrieves a song from the catalog by its compound key (artist, title, year).
+
+    Args:
+        artist (str): The artist of the song.
+        title (str): The title of the song.
+        year (int): The year of the song.
+
+    Returns:
+        Song: The Song object corresponding to the compound key.
+
+    Raises:
+        ValueError: If the song is not found or is marked as deleted.
+    """
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -159,6 +224,20 @@ def get_meal_by_name(meal_name: str) -> Meal:
 
 
 def update_meal_stats(meal_id: int, result: str) -> None:
+    """
+    Retrieves a song from the catalog by its compound key (artist, title, year).
+
+    Args:
+        artist (str): The artist of the song.
+        title (str): The title of the song.
+        year (int): The year of the song.
+
+    Returns:
+        Song: The Song object corresponding to the compound key.
+
+    Raises:
+        ValueError: If the song is not found or is marked as deleted.
+    """
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
