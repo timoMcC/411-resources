@@ -102,18 +102,16 @@ def delete_meal(meal_id: int) -> None:
 
 def get_leaderboard(sort_by: str="wins") -> dict[str, Any]:
     """
-    Retrieves a song from the catalog by its compound key (artist, title, year).
+    Retrieves a leaderboard with the statistics for each combatant
 
     Args:
-        artist (str): The artist of the song.
-        title (str): The title of the song.
-        year (int): The year of the song.
+        sort_by (str): what the leaderboard key should be, default value is wins
 
     Returns:
-        Song: The Song object corresponding to the compound key.
+        dict[str, Any]: dictionary with sort_by attribute as key and Any as value
 
     Raises:
-        ValueError: If the song is not found or is marked as deleted.
+        ValueError: If the sort_by is not win_pct or wins
     """
     query = """
         SELECT id, meal, cuisine, price, difficulty, battles, wins, (wins * 1.0 / battles) AS win_pct
