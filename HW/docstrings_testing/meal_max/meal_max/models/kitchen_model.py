@@ -28,18 +28,17 @@ class Meal:
 
 def create_meal(meal: str, cuisine: str, price: float, difficulty: str) -> None:
     """
-    Creates a new song in the songs table.
+    Creates a new meal in the meals table.
 
     Args:
-        artist (str): The artist's name.
-        title (str): The song title.
-        year (int): The year the song was released.
-        genre (str): The song genre.
-        duration (int): The duration of the song in seconds.
+        meal (str): The meal's name.
+        cuisine (str): The cuisine name.
+        price (float): The price of the meal.
+        difficulty (str): The difficulty level of the meal.
 
     Raises:
-        ValueError: If year or duration are invalid.
-        sqlite3.IntegrityError: If a song with the same compound key (artist, title, year) already exists.
+        ValueError: If price or difficulty level are invalid.
+        sqlite3.IntegrityError: If a meal with the same key meal already exists.
         sqlite3.Error: For any other database errors.
     """
     if not isinstance(price, (int, float)) or price <= 0:
@@ -69,13 +68,13 @@ def create_meal(meal: str, cuisine: str, price: float, difficulty: str) -> None:
 
 def delete_meal(meal_id: int) -> None:
     """
-    Soft deletes a song from the catalog by marking it as deleted.
+    Soft deletes a meal from the catalog by marking it as deleted.
 
     Args:
-        song_id (int): The ID of the song to delete.
+        meal_id (int): The ID of the meal to delete.
 
     Raises:
-        ValueError: If the song with the given ID does not exist or is already marked as deleted.
+        ValueError: If the meal with the given ID does not exist or is already marked as deleted.
         sqlite3.Error: If any database error occurs.
     """
     try:
@@ -157,16 +156,17 @@ def get_leaderboard(sort_by: str="wins") -> dict[str, Any]:
 
 def get_meal_by_id(meal_id: int) -> Meal:
     """
-    Retrieves a song from the catalog by its song ID.
+    Retrieves a meal from the catalog by its meal ID.
 
     Args:
-        song_id (int): The ID of the song to retrieve.
+        meal_id (int): The ID of the meal to retrieve.
 
     Returns:
-        Song: The Song object corresponding to the song_id.
+        Meal: The Meal object corresponding to the meal_id.
 
     Raises:
-        ValueError: If the song is not found or is marked as deleted.
+        ValueError: If the meal is not found or is marked as deleted.
+        sqlite3.Error: If any database error occurs.
     """
     try:
         with get_db_connection() as conn:
@@ -190,18 +190,17 @@ def get_meal_by_id(meal_id: int) -> Meal:
 
 def get_meal_by_name(meal_name: str) -> Meal:
     """
-    Retrieves a song from the catalog by its compound key (artist, title, year).
+    Retrieves a meal from the catalog by its meal name.
 
     Args:
-        artist (str): The artist of the song.
-        title (str): The title of the song.
-        year (int): The year of the song.
+        meal_name (str): The name of the meal.
 
     Returns:
-        Song: The Song object corresponding to the compound key.
+        Meal: The Meal object corresponding to the meal name.
 
     Raises:
-        ValueError: If the song is not found or is marked as deleted.
+        ValueError: If the meal name is not found or is marked as deleted.
+        sqlite3.Error: If any database error occurs.
     """
     try:
         with get_db_connection() as conn:
@@ -225,18 +224,15 @@ def get_meal_by_name(meal_name: str) -> Meal:
 
 def update_meal_stats(meal_id: int, result: str) -> None:
     """
-    Retrieves a song from the catalog by its compound key (artist, title, year).
+    Updates a meal id's win or loss stat.
 
     Args:
-        artist (str): The artist of the song.
-        title (str): The title of the song.
-        year (int): The year of the song.
-
-    Returns:
-        Song: The Song object corresponding to the compound key.
+        meal_id (int): The id of the meal.
+        result (str): The win or loss result of the meal's battle.
 
     Raises:
-        ValueError: If the song is not found or is marked as deleted.
+        ValueError: If the meal with meal_id is not found or is marked as deleted or if the result is invalid.
+        sqlite3.Error: If any database error occurs.
     """
     try:
         with get_db_connection() as conn:
