@@ -111,6 +111,8 @@ def get_leaderboard(sort_by: str="wins") -> dict[str, Any]:
 
     Raises:
         ValueError: If the sort_by is not win_pct or wins
+        Sqlite3.Error: If any database error occurs
+
     """
     query = """
         SELECT id, meal, cuisine, price, difficulty, battles, wins, (wins * 1.0 / battles) AS win_pct
