@@ -27,6 +27,21 @@ class Meal:
 
 
 def create_meal(meal: str, cuisine: str, price: float, difficulty: str) -> None:
+    """
+    Creates a new song in the songs table.
+
+    Args:
+        artist (str): The artist's name.
+        title (str): The song title.
+        year (int): The year the song was released.
+        genre (str): The song genre.
+        duration (int): The duration of the song in seconds.
+
+    Raises:
+        ValueError: If year or duration are invalid.
+        sqlite3.IntegrityError: If a song with the same compound key (artist, title, year) already exists.
+        sqlite3.Error: For any other database errors.
+    """
     if not isinstance(price, (int, float)) or price <= 0:
         raise ValueError(f"Invalid price: {price}. Price must be a positive number.")
     if difficulty not in ['LOW', 'MED', 'HIGH']:
