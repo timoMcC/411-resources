@@ -26,10 +26,10 @@ class BattleModel:
 
     def battle(self) -> str:
         """
-        Adds a song to the playlist.
+        Adds a meal to the battle.
 
         Args:
-            song (Song): the song to add to the playlist.
+            Meal: the meal to add to the battle.
 
         Raises:
             TypeError: If the meal is not a valid meal instance.
@@ -99,7 +99,7 @@ class BattleModel:
         Retrieves a battle score for a combatant in the BattleModel instance
 
         Args:
-            combatant (Meal): The ID of the song to retrieve.
+            combatant (Meal): The ID of the meal to retrieve.
 
         Raises:
             ValueError: If the combantant is empty or not found.
