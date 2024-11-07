@@ -1,50 +1,98 @@
 import pytest
-import requests
 
-from music_collection.utils.random_utils import get_random
+from meal_max.models.battle_model import BattleModel
+from meal_max.models.kitchen_model import Meal
 
 
-RANDOM_NUMBER = 42
-NUM_SONGS = 100
+@pytest.fixture()
+def battle_model():
+    """Fixture to provide a new instance of BattleModel for each test."""
+    return BattleModel()
+
+"""Fixtures providing sample meals for the tests."""
+@pytest.fixture
+def sample_meal1():
+    """Fixture for a sample Meal instance."""
+    return Meal(id=1, meal='Spaghetti', price=12.50, cuisine=['Italian'], difficulty='MED')
+
 
 @pytest.fixture
-def mock_random_org(mocker):
-    # Patch the requests.get call
-    # requests.get returns an object, which we have replaced with a mock object
-    mock_response = mocker.Mock()
-    # We are giving that object a text attribute
-    mock_response.text = f"{RANDOM_NUMBER}"
-    mocker.patch("requests.get", return_value=mock_response)
-    return mock_response
+def sample_meal2():
+    """Fixture for another sample Meal instance."""
+    return Meal(id=2, meal='Sushi', price=15.00, cuisine=['Japanese'], difficulty='HIGH')
+
+@pytest.fixture
+def sample_meal3():
+    """Fixture for a third sample Meal instance."""
+    return Meal(id=3, meal='Tacos', price=8.00, cuisine=['Mexican'], difficulty='LOW')
+
+@pytest.fixture
+def sample_battle_model(sample_meal1, sample_meal2):
+    return [sample_meal1, sample_meal2]
 
 
-def test_get_random(mock_random_org):
-    """Test retrieving a random number from random.org."""
-    result = get_random(NUM_SONGS)
 
-    # Assert that the result is the mocked random number
-    assert result == RANDOM_NUMBER, f"Expected random number {RANDOM_NUMBER}, but got {result}"
+##################################################
+# Prep Combatant Test Cases
+##################################################
 
-    # Ensure that the correct URL was called
-    requests.get.assert_called_once_with("https://www.random.org/integers/?num=1&min=1&max=100&col=1&base=10&format=plain&rnd=new", timeout=5)
+def test_add_meal_to_battle(battle_model, sample_meal1):
+    """Test adding a meal to the battle."""
+    battle_model.prep_combatant(sample_meal1)
+    assert len(battle_model.combatants) == 1
+    assert battle_model.combatants[0].meal == 'Spaghetti'
 
-def test_get_random_request_failure(mocker):
-    """Simulate  a request failure."""
-    mocker.patch("requests.get", side_effect=requests.exceptions.RequestException("Connection error"))
+def test_prep_combatant_full(battle_model, sample_meal1, sample_meal2, sample_meal3):
+    """Test adding a meal when the combatants list is full."""
+    battle_model.prep_combatant(sample_meal1)
+    battle_model.prep_combatant(sample_meal2)
+    with pytest.raises(ValueError, match="Combatant list is full"):
+        battle_model.prep_combatant(sample_meal3)
 
-    with pytest.raises(RuntimeError, match="Request to random.org failed: Connection error"):
-        get_random(NUM_SONGS)
+def test_prep_combatant_invalid_data(battle_model):
+    """Test adding a combatant with invalid data."""
+    invalid_meal = "Not a meal"
+    with pytest.raises(AttributeError):
+        battle_model.prep_combatant(invalid_meal)
 
-def test_get_random_timeout(mocker):
-    """Simulate  a timeout."""
-    mocker.patch("requests.get", side_effect=requests.exceptions.Timeout)
+##################################################
+# Clear Combatants Test Cases
+##################################################
 
-    with pytest.raises(RuntimeError, match="Request to random.org timed out."):
-        get_random(NUM_SONGS)
+def test_clear_combatants(battle_model, sample_meal1, sample_meal2):
+    """Test clearing all combatants from battle."""
+    battle_model.prep_combatant(sample_meal1)
+    battle_model.prep_combatant(sample_meal2)
+    assert len(battle_model.combatants) == 2
 
-def test_get_random_invalid_response(mock_random_org):
-    """Simulate  an invalid response (non-digit)."""
-    mock_random_org.text = "invalid_response"
+    battle_model.clear_combatants()
+    assert len(battle_model.combatants) == 0
 
-    with pytest.raises(ValueError, match="Invalid response from random.org: invalid_response"):
-        get_random(NUM_SONGS)
+
+##################################################
+# Get Battle Score Test Cases
+##################################################
+
+def test_get_battle_score(battle_model, sample_meal1):
+    """Test calculating battle score for a combatant."""
+    score = battle_model.get_battle_score(sample_meal1)
+    expected = (sample_meal1.price * len(sample_meal1.cuisine)) - {"HIGH": 1, "MED": 2, "LOW": 3}[sample_meal1.difficulty]
+    assert score == expected
+
+
+def test_get_battle_score_invalid_diff(battle_model, sample_meal1):
+    """Test that get_battle_score raises KeyError for invalid difficulty."""
+    sample_meal1.difficulty = 'not valid'
+    with pytest.raises(KeyError):
+        battle_model.get_battle_score(sample_meal1)
+
+##################################################
+# Get Combatants Test Cases
+##################################################
+
+def test_get_combatants(battle_model, sample_meal1, sample_meal2):
+    """Test retrieving the list of combatants."""
+    battle_model.prep_combatant(sample_meal1)
+    battle_model.prep_combatant(sample_meal2)
+    combatants = battle_model.get_combatants()
+    assert combatants == [sample_meal1, sample_meal2]
