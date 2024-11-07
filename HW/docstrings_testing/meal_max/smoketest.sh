@@ -24,8 +24,8 @@ done
 # Function to check the health of the service
 check_health() {
   echo "Checking health status..."
-  curl -s -X GET "$BASE_URL/health" | grep -q '"status": "healthy"'
-  if [ $? -eq 0 ]; then
+  response=$(curl -s -X GET "$BASE_URL/health")
+  if echo "$response" | grep -q '"status": "healthy"'; then
     echo "Service is healthy."
   else
     echo "Health check failed."
@@ -36,8 +36,8 @@ check_health() {
 # Function to check the database connection
 check_db() {
   echo "Checking database connection..."
-  curl -s -X GET "$BASE_URL/db-check" | grep -q '"database_status": "healthy"'
-  if [ $? -eq 0 ]; then
+  response=$(curl -s -X GET "$BASE_URL/db-check")
+  if echo "$response" | grep -q '"database_status": "healthy"'; then
     echo "Database connection is healthy."
   else
     echo "Database check failed."
@@ -45,16 +45,11 @@ check_db() {
   fi
 }
 
-###############################################
+##########################################################
 #
 # Meal Management
 #
-###############################################
-
-clear_catalog() {
-  echo "Clearing the catalog..."
-  curl -s -X DELETE "$BASE_URL/clear-meals" | grep -q '"status": "success"'
-}
+##########################################################
 
 create_meal() {
   meal=$1
@@ -63,33 +58,19 @@ create_meal() {
   difficulty=$4
 
   echo "Creating meal ($meal - $cuisine, Price: $price, Difficulty: $difficulty)..."
-  curl -s -X POST "$BASE_URL/create-meal" -H "Content-Type: application/json" \
-    -d "{\"meal\":\"$meal\", \"cuisine\":\"$cuisine\", \"price\":$price, \"difficulty\":\"$difficulty\"}" 
+  response=$(curl -s -X POST "$BASE_URL/create-meal" -H "Content-Type: application/json" \
+    -d "{\"meal\":\"$meal\", \"cuisine\":\"$cuisine\", \"price\":$price, \"difficulty\":\"$difficulty\"}")
 
-  if [ $? -eq 0 ]; then
-    echo "Meal created successfully."
-  else
-    echo "Failed to create meal."
-    exit 1
-  fi
-}
-
-delete_meal_by_id() {
-  meal_id=$1
-
-  echo "Deleting meal by ID ($meal_id)..."
-  response=$(curl -s -X DELETE "$BASE_URL/delete-meal/$meal_id")
   if echo "$response" | grep -q '"status": "success"'; then
-    echo "Meal deleted successfully by ID ($meal_id)."
+    echo "Meal '$meal' added successfully."
   else
-    echo "Failed to delete meal by ID ($meal_id)."
+    echo "Failed to add meal '$meal'."
     exit 1
   fi
 }
 
 get_meal_by_id() {
   meal_id=$1
-
   echo "Getting meal by ID ($meal_id)..."
   response=$(curl -s -X GET "$BASE_URL/get-meal-by-id/$meal_id")
   if echo "$response" | grep -q '"status": "success"'; then
@@ -106,13 +87,12 @@ get_meal_by_id() {
 
 get_meal_by_name() {
   meal_name=$1
-
   echo "Getting meal by name ($meal_name)..."
   response=$(curl -s -X GET "$BASE_URL/get-meal-by-name/$meal_name")
   if echo "$response" | grep -q '"status": "success"'; then
     echo "Meal retrieved successfully by name ($meal_name)."
     if [ "$ECHO_JSON" = true ]; then
-      echo "Meal JSON (Name: $meal_name):"
+      echo "Meal JSON (Name $meal_name):"
       echo "$response" | jq .
     fi
   else
@@ -121,43 +101,57 @@ get_meal_by_name() {
   fi
 }
 
+delete_meal_by_id() {
+  meal_id=$1
+  echo "Deleting meal by ID ($meal_id)..."
+  response=$(curl -s -X DELETE "$BASE_URL/delete-meal/$meal_id")
+  if echo "$response" | grep -q '"status": "success"'; then
+    echo "Meal deleted successfully by ID ($meal_id)."
+  else
+    echo "Failed to delete meal by ID ($meal_id)."
+    exit 1
+  fi
+}
 
 ############################################################
 #
-# Battle Management
+# Combat Management
 #
 ############################################################
 
 prep_combatant() {
-  meal_name=$1
+  meal_id=$1
+  echo "Preparing combatant with Meal ID ($meal_id)..."
+  response=$(curl -s -X POST "$BASE_URL/battle/prep-combatant" -H "Content-Type: application/json" \
+    -d "{\"meal_id\":$meal_id}")
+  if echo "$response" | grep -q '"status": "success"'; then
+    echo "Combatant prepared successfully for Meal ID ($meal_id)."
+  else
+    echo "Failed to prepare combatant for Meal ID ($meal_id)."
+    exit 1
+  fi
+}
 
-  echo "Preparing combatant with Meal name ($meal_name)..."
-  response=$(curl -s -X POST "$BASE_URL/prep-combatant" \
-    -H "Content-Type: application/json" \
-    -d "{\"meal\": \"$meal_name\"}")
-
-  if echo "$response" | grep -q '"status": "combatant prepared"'; then
-    echo "Combatant prepared successfully."
+get_combatants() {
+  echo "Retrieving current combatants..."
+  response=$(curl -s -X GET "$BASE_URL/battle/get-combatants")
+  if echo "$response" | grep -q '"status": "success"'; then
+    echo "Combatants retrieved successfully."
     if [ "$ECHO_JSON" = true ]; then
-      echo "Combatant JSON:"
+      echo "Combatants JSON:"
       echo "$response" | jq .
     fi
   else
-    echo "Failed to prepare combatant."
+    echo "Failed to retrieve combatants."
     exit 1
   fi
 }
 
 conduct_battle() {
-  echo "Conducting a battle between combatants..."
+  echo "Conducting battle between combatants..."
   response=$(curl -s -X POST "$BASE_URL/battle/battle")
-  
   if echo "$response" | grep -q '"status": "success"'; then
     echo "Battle conducted successfully."
-    if [ "$ECHO_JSON" = true ]; then
-      echo "Battle Result JSON:"
-      echo "$response" | jq .
-    fi
   else
     echo "Failed to conduct battle."
     exit 1
@@ -167,7 +161,6 @@ conduct_battle() {
 clear_combatants() {
   echo "Clearing all combatants..."
   response=$(curl -s -X POST "$BASE_URL/battle/clear-combatants")
-  
   if echo "$response" | grep -q '"status": "success"'; then
     echo "Combatants cleared successfully."
   else
@@ -176,37 +169,9 @@ clear_combatants() {
   fi
 }
 
-
-get_battle_score() {
-  meal_id=$1
-
-  echo "Retrieving battle score for Meal ID ($meal_id)..."
-  response=$(curl -s -X GET "$BASE_URL/battle/get-battle-score/$meal_id")
-  
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "Battle score retrieved successfully."
-    if [ "$ECHO_JSON" = true ]; then
-      echo "Battle Score JSON (Meal ID $meal_id):"
-      echo "$response" | jq .
-    fi
-  else
-    echo "Failed to retrieve battle score."
-    exit 1
-  fi
-}
-
 ############################################################
 #
-# Utility Functions
-#
-############################################################
-
-# Function to exit the script on any error
-set -e
-
-############################################################
-#
-# Execute Smoke Tests
+# Main Execution
 #
 ############################################################
 
@@ -214,25 +179,25 @@ set -e
 check_health
 check_db
 
-# Clear the catalog
-clear_catalog
-
-# Meal Management
+# Create some meals
 create_meal "Spaghetti" "Italian" 12.50 "MED"
 create_meal "Sushi" "Japanese" 15.00 "HIGH"
-create_meal "Tacos" "Mexican" 8.00 "LOW"
+create_meal "Taco" "Mexican" 8.00 "LOW"
 
-get_meal_by_id 1
-get_meal_by_name "Sushi"
+# Prepare combatants
+prep_combatant 1
+prep_combatant 2
 
-# Battle Management
-prep_combatant "Sushi"
-prep_combatant "Spaghetti"
-
-conduct_battle
-
+# Retrieve combatants
 get_combatants
 
+# Conduct battle
+conduct_battle
+
+# Retrieve combatants again
+get_combatants
+
+# Clear all combatants
 clear_combatants
 
-echo "All battle smoke tests passed successfully!"
+echo "All tests passed successfully!"
