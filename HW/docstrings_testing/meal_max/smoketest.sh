@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the base URL for the Flask API
-BASE_URL="http://localhost:5000/api"
+BASE_URL="http://localhost:5001/api"
 
 # Flag to control whether to echo JSON output
 ECHO_JSON=false
@@ -59,7 +59,7 @@ create_meal() {
 
   echo "Creating meal ($meal - $cuisine, Price: $price, Difficulty: $difficulty)..."
   curl -s -X POST "$BASE_URL/create-meal" -H "Content-Type: application/json" \
-    -d "{\"meal\":\"$meal\", \"cuisine\":\"$cuisine\", \"price\":$price, \"difficulty\":\"$difficulty\"}" | grep -q '"status": "success"'
+    -d "{\"meal\":\"$meal\", \"cuisine\":\"$cuisine\", \"price\":$price, \"difficulty\":\"$difficulty\"}" 
 
   if [ $? -eq 0 ]; then
     echo "Meal created successfully."
@@ -78,21 +78,6 @@ delete_meal_by_id() {
     echo "Meal deleted successfully by ID ($meal_id)."
   else
     echo "Failed to delete meal by ID ($meal_id)."
-    exit 1
-  fi
-}
-
-get_all_meals() {
-  echo "Getting all meals from the catalog..."
-  response=$(curl -s -X GET "$BASE_URL/get-all-meals")
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "All meals retrieved successfully."
-    if [ "$ECHO_JSON" = true ]; then
-      echo "Meals JSON:"
-      echo "$response" | jq .
-    fi
-  else
-    echo "Failed to get meals."
     exit 1
   fi
 }
@@ -131,20 +116,6 @@ get_meal_by_name() {
   fi
 }
 
-get_random_meal() {
-  echo "Getting a random meal from the catalog..."
-  response=$(curl -s -X GET "$BASE_URL/get-random-meal")
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "Random meal retrieved successfully."
-    if [ "$ECHO_JSON" = true ]; then
-      echo "Random Meal JSON:"
-      echo "$response" | jq .
-    fi
-  else
-    echo "Failed to get a random meal."
-    exit 1
-  fi
-}
 
 ############################################################
 #
@@ -153,14 +124,14 @@ get_random_meal() {
 ############################################################
 
 prep_combatant() {
-  meal_id=$1
+  meal_name=$1
 
-  echo "Preparing combatant with Meal ID ($meal_id)..."
-  response=$(curl -s -X POST "$BASE_URL/battle/prep-combatant" \
+  echo "Preparing combatant with Meal name ($meal_name)..."
+  response=$(curl -s -X POST "$BASE_URL/prep-combatant" \
     -H "Content-Type: application/json" \
-    -d "{\"meal_id\": $meal_id}")
+    -d "{\"meal\": \"$meal_name\"}")
 
-  if echo "$response" | grep -q '"status": "success"'; then
+  if echo "$response" | grep -q '"status": "combatant prepared"'; then
     echo "Combatant prepared successfully."
     if [ "$ECHO_JSON" = true ]; then
       echo "Combatant JSON:"
@@ -258,15 +229,12 @@ create_meal "Spaghetti" "Italian" 12.50 "MED"
 create_meal "Sushi" "Japanese" 15.00 "HIGH"
 create_meal "Tacos" "Mexican" 8.00 "LOW"
 
-get_all_meals
-
 get_meal_by_id 1
 get_meal_by_name "Sushi"
-get_random_meal
 
 # Battle Management
-prep_combatant 1
-prep_combatant 2
+prep_combatant "Sushi"
+prep_combatant "Spaghetti"
 
 get_combatants
 
