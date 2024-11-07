@@ -51,6 +51,11 @@ check_db() {
 #
 ###############################################
 
+clear_catalog() {
+  echo "Clearing the catalog..."
+  curl -s -X DELETE "$BASE_URL/clear-meals" | grep -q '"status": "success"'
+}
+
 create_meal() {
   meal=$1
   cuisine=$2
@@ -171,21 +176,6 @@ clear_combatants() {
   fi
 }
 
-get_combatants() {
-  echo "Retrieving current combatants..."
-  response=$(curl -s -X GET "$BASE_URL/battle/get-combatants")
-  
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "Combatants retrieved successfully."
-    if [ "$ECHO_JSON" = true ]; then
-      echo "Combatants JSON:"
-      echo "$response" | jq .
-    fi
-  else
-    echo "Failed to retrieve combatants."
-    exit 1
-  fi
-}
 
 get_battle_score() {
   meal_id=$1
@@ -224,6 +214,9 @@ set -e
 check_health
 check_db
 
+# Clear the catalog
+clear_catalog
+
 # Meal Management
 create_meal "Spaghetti" "Italian" 12.50 "MED"
 create_meal "Sushi" "Japanese" 15.00 "HIGH"
@@ -235,8 +228,6 @@ get_meal_by_name "Sushi"
 # Battle Management
 prep_combatant "Sushi"
 prep_combatant "Spaghetti"
-
-get_combatants
 
 conduct_battle
 
