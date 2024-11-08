@@ -15,7 +15,6 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-
 ###############################################
 #
 # Health checks
@@ -25,8 +24,8 @@ done
 # Function to check the health of the service
 check_health() {
   echo "Checking health status..."
-  curl -s -X GET "$BASE_URL/health" | grep -q '"status": "healthy"'
-  if [ $? -eq 0 ]; then
+  response=$(curl -s -X GET "$BASE_URL/health")
+  if echo "$response" | grep -q '"status": "healthy"'; then
     echo "Service is healthy."
   else
     echo "Health check failed."
@@ -37,8 +36,8 @@ check_health() {
 # Function to check the database connection
 check_db() {
   echo "Checking database connection..."
-  curl -s -X GET "$BASE_URL/db-check" | grep -q '"database_status": "healthy"'
-  if [ $? -eq 0 ]; then
+  response=$(curl -s -X GET "$BASE_URL/db-check")
+  if echo "$response" | grep -q '"database_status": "healthy"'; then
     echo "Database connection is healthy."
   else
     echo "Database check failed."
@@ -46,12 +45,9 @@ check_db() {
   fi
 }
 
-
-
-
 ##########################################################
 #
-# meals
+# Meal Management
 #
 ##########################################################
 
@@ -61,11 +57,10 @@ clear_catalog() {
 }
 
 create_meal() {
-  id=$1
-  meal=$2
-  cuisine=$3
-  price=$4
-  difficulty=$5
+  meal=$1
+  cuisine=$2
+  price=$3
+  difficulty=$4
 
   echo "Creating meal ($meal - $cuisine, Price: $price, Difficulty: $difficulty)..."
   response=$(curl -s -X POST "$BASE_URL/create-meal" -H "Content-Type: application/json" \
@@ -74,45 +69,39 @@ create_meal() {
   if echo "$response" | grep -q '"status": "combatant added"'; then
     echo "Meal '$meal' added successfully."
   else
-    echo "Failed to delete meal by ID ($id)."
+    echo "Failed to add meal '$meal'."
     exit 1
   fi
 }
 
 get_meal_by_id() {
   meal_id=$1
-
   echo "Getting meal by ID ($meal_id)..."
   response=$(curl -s -X GET "$BASE_URL/get-meal-by-id/$meal_id")
   if echo "$response" | grep -q '"status": "success"'; then
-    echo "meal retrieved successfully by ID ($meal_id)."
+    echo "Meal retrieved successfully by ID ($meal_id)."
     if [ "$ECHO_JSON" = true ]; then
-      echo "Song JSON (ID $meal_id):"
+      echo "Meal JSON (ID $meal_id):"
       echo "$response" | jq .
     fi
   else
-    echo "Failed to get song by ID ($meal_id)."
+    echo "Failed to get meal by ID ($meal_id)."
     exit 1
   fi
 }
 
-
-# there might be an issue here w the response line
-get_meal_by_id() {
-  id=$1
-  meal=$2
-  cuisine=$3
-
-  echo "Getting meal by id (id: '$id', meal: '$meal', cuisine: $cuisine)..."
-  response=$(curl -s -X GET "$BASE_URL/get-meal-by-name?id=$(echo $id | sed 's/ /%20/g')&meal=$(echo $meal | sed 's/ /%20/g')&cuisine=$cuisine")
+get_meal_by_name() {
+  meal_name=$1
+  echo "Getting meal by name ($meal_name)..."
+  response=$(curl -s -X GET "$BASE_URL/get-meal-by-name/$meal_name")
   if echo "$response" | grep -q '"status": "success"'; then
-    echo "meal retrieved successfully by id."
+    echo "Meal retrieved successfully by name ($meal_name)."
     if [ "$ECHO_JSON" = true ]; then
-      echo "meal JSON from id:"
+      echo "Meal JSON (Name $meal_name):"
       echo "$response" | jq .
     fi
   else
-    echo "Failed to get meal from id"
+    echo "Failed to get meal by name ($meal_name)."
     exit 1
   fi
 }
@@ -124,7 +113,7 @@ delete_meal_by_id() {
   if echo "$response" | grep -q '"status": "meal deleted"'; then
     echo "Meal deleted successfully by ID ($meal_id)."
   else
-    echo "Failed to battle."
+    echo "Failed to delete meal by ID ($meal_id)."
     exit 1
   fi
 }
@@ -154,9 +143,13 @@ get_combatants() {
   echo "Retrieving current combatants..."
   response=$(curl -s -X GET "$BASE_URL/get-combatants")
   if echo "$response" | grep -q '"status": "success"'; then
-    echo "get-combatants successful."
+    echo "Combatants retrieved successfully."
+    if [ "$ECHO_JSON" = true ]; then
+      echo "Combatants JSON:"
+      echo "$response" | jq .
+    fi
   else
-    echo "failed to get-combatants."
+    echo "Failed to retrieve combatants."
     exit 1
   fi
 }
@@ -167,7 +160,7 @@ conduct_battle() {
   if echo "$response" | grep -q '"status": "battle complete"'; then
     echo "Battle conducted successfully."
   else
-    echo "failed to prep-combatant."
+    echo "Failed to conduct battle."
     exit 1
   fi
 }
@@ -205,9 +198,13 @@ get_meal_leaderboard() {
   fi
 }
 
-# # echo "complete"
+############################################################
+#
+# Main Execution
+#
+############################################################
 
-# # Health checks
+# Health checks
 check_health
 check_db
 
@@ -236,7 +233,6 @@ get_combatants
 get_meal_leaderboard
 
 # Delete a meal
-get_meal_by_id 1
 delete_meal_by_id 1
 
 # Clear all combatants
