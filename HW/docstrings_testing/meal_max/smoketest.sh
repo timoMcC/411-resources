@@ -55,6 +55,11 @@ check_db() {
 #
 ##########################################################
 
+clear_catalog() {
+  echo "Clearing the catalog..."
+  curl -s -X DELETE "$BASE_URL/clear-meals" | grep -q '"status": "success"'
+}
+
 create_meal() {
   id=$1
   meal=$2
@@ -62,26 +67,12 @@ create_meal() {
   price=$4
   difficulty=$5
 
-  echo "Adding meal -> $id , $meal, $cuisine, $price, $difficulty ..."
-  curl -s -X POST "$BASE_URL/create-meal" -H "Content-Type: application/json" \
-    -d "{\"id\":\"$id\", \"meal\":\"$meal\", \"cuisine\":$cuisine, \"price\":\"$price\", \"difficulty\":$difficulty}" | grep -q '"status": "combatant added"'
+  echo "Creating meal ($meal - $cuisine, Price: $price, Difficulty: $difficulty)..."
+  response=$(curl -s -X POST "$BASE_URL/create-meal" -H "Content-Type: application/json" \
+    -d "{\"meal\":\"$meal\", \"cuisine\":\"$cuisine\", \"price\":$price, \"difficulty\":\"$difficulty\"}")
 
-  if [ $? -eq 0 ]; then
-    echo "meal added successfully."
-  else
-    echo "Failed to add meal."
-    exit 1
-  fi
-}
-
-
-delete_meal_by_id() {
-  id=$1
-
-  echo "Deleting meal by ID ($id)..."
-  response=$(curl -s -X DELETE "$BASE_URL/delete-meal/$id")
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "meal deleted successfully by ID ($id)."
+  if echo "$response" | grep -q '"status": "combatant added"'; then
+    echo "Meal '$meal' added successfully."
   else
     echo "Failed to delete meal by ID ($id)."
     exit 1
@@ -126,57 +117,42 @@ get_meal_by_id() {
   fi
 }
 
-# THIS COULD BE update_meal_stats but there is no path in app.py
-# get_random_song() {
-#   echo "Getting a random song from the catalog..."
-#   response=$(curl -s -X GET "$BASE_URL/get-random-song")
-#   if echo "$response" | grep -q '"status": "success"'; then
-#     echo "Random song retrieved successfully."
-#     if [ "$ECHO_JSON" = true ]; then
-#       echo "Random Song JSON:"
-#       echo "$response" | jq .
-#     fi
-#   else
-#     echo "Failed to get a random song."
-#     exit 1
-#   fi
-# }
-
-
-# ############################################################
-# #
-# # Battle
-# #
-# ############################################################
-
-battle() {
-  echo "battle..."
-  response=$(curl -s -X POST "$BASE_URL/battle")
-
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "battle successful."
+delete_meal_by_id() {
+  meal_id=$1
+  echo "Deleting meal by ID ($meal_id)..."
+  response=$(curl -s -X DELETE "$BASE_URL/delete-meal/$meal_id")
+  if echo "$response" | grep -q '"status": "meal deleted"'; then
+    echo "Meal deleted successfully by ID ($meal_id)."
   else
     echo "Failed to battle."
     exit 1
   fi
 }
 
-clear_combatants() {
-  echo "clear combatants..."
-  response=$(curl -s -X POST "$BASE_URL/clear-combatants")
+############################################################
+#
+# Combat Management
+#
+############################################################
 
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "clear-combatants successful."
+prep_combatant() {
+  meal_name=$1
+  
+  echo "Preparing combatant with Meal name ($meal_name)..."
+  response=$(curl -s -X POST "$BASE_URL/prep-combatant" \
+    -H "Content-Type: application/json" \
+    -d "{\"meal\": \"$meal_name\"}")
+  if echo "$response" | grep -q '"status": "combatant prepared"'; then
+    echo "Combatant prepared successfully."
   else
-    echo "Failed to clear-combatants."
+    echo "Failed to prepare combatant."
     exit 1
   fi
 }
 
 get_combatants() {
-  echo "get combatants..."
-  response=$(curl -s -X POST "$BASE_URL/get-combatants")
-
+  echo "Retrieving current combatants..."
+  response=$(curl -s -X GET "$BASE_URL/get-combatants")
   if echo "$response" | grep -q '"status": "success"'; then
     echo "get-combatants successful."
   else
@@ -185,35 +161,49 @@ get_combatants() {
   fi
 }
 
-prep_combatants() {
-  echo "prep combatants..."
-  response=$(curl -s -X POST "$BASE_URL/prep-combatant")
-
-  if echo "$response" | grep -q '"status": "success"'; then
-    echo "prep-combatant successful."
+conduct_battle() {
+  echo "Conducting battle between combatants..."
+  response=$(curl -s -X GET "$BASE_URL/battle")
+  if echo "$response" | grep -q '"status": "battle complete"'; then
+    echo "Battle conducted successfully."
   else
     echo "failed to prep-combatant."
     exit 1
   fi
 }
 
-# ############################################################
-# #
-# # Leaderboard
-# #
-# ############################################################
+clear_combatants() {
+  echo "Clearing all combatants..."
+  response=$(curl -s -X POST "$BASE_URL/clear-combatants")
+  if echo "$response" | grep -q '"status": "combatants cleared"'; then
+    echo "Combatants cleared successfully."
+  else
+    echo "Failed to clear combatants."
+    exit 1
+  fi
+}
 
-# get_leaderboard() {
-#   echo "getting leaderboard..."
-#   response=$(curl -s -X POST "$BASE_URL/leaderboard")
+############################################################
+#
+# Leaderboard
+#
+############################################################
 
-#   if echo "$response" | grep -q '"status": "success"'; then
-#     echo "get leaderboard."
-#   else
-#     echo "Failed to get leaderboard."
-#     exit 1
-#   fi
-# }
+# Function to get the meal leaderboard sorted by win count
+get_meal_leaderboard() {
+  echo "Getting meal leaderboard sorted by win count..."
+  response=$(curl -s -X GET "$BASE_URL/leaderboard")
+  if echo "$response" | grep -q '"status": "success"'; then
+    echo "Meal leaderboard retrieved successfully."
+    if [ "$ECHO_JSON" = true ]; then
+      echo "Leaderboard JSON (sorted by win count):"
+      echo "$response" | jq .
+    fi
+  else
+    echo "Failed to get meal leaderboard."
+    exit 1
+  fi
+}
 
 # # echo "complete"
 
@@ -221,49 +211,35 @@ prep_combatants() {
 check_health
 check_db
 
-# # Create songs
-create_meal 111 "test1" "test1" 20.0 "LOW"
-# create_meal 101 "pasta1" "italia1n" 201.0 "LOW"
-# create_meal 102 "pasta2" "italian2" 201.0 "LOW"
-# create_meal 103 "past3" "italian3" 200.0 "HIGH"
+# Clear the catalog
+# clear_catalog
 
-# delete_song_by_id 1
-# get_all_songs
+# Create some meals
+create_meal "Spaghetti" "Italian" 12.50 "MED"
+create_meal "Sushi" "Japanese" 15.00 "HIGH"
+create_meal "Taco" "Mexican" 8.00 "LOW"
 
-# get_song_by_id 2
-# get_song_by_compound_key "The Beatles" "Let It Be" 1970
-# get_random_song
+# Prepare combatants
+prep_combatant "Sushi"
+prep_combatant "Spaghetti"
 
-# add_song_to_playlist "The Rolling Stones" "Paint It Black" 1966
-# add_song_to_playlist "Queen" "Bohemian Rhapsody" 1975
-# add_song_to_playlist "Led Zeppelin" "Stairway to Heaven" 1971
-# add_song_to_playlist "The Beatles" "Let It Be" 1970
+# Retrieve combatants
+get_combatants
 
-# remove_song_from_playlist "The Beatles" "Let It Be" 1970
-# remove_song_by_track_number 2
+# Conduct battle
+conduct_battle
 
-# get_all_songs_from_playlist
+# Retrieve combatants again
+get_combatants
 
-# add_song_to_playlist "Queen" "Bohemian Rhapsody" 1975
-# add_song_to_playlist "The Beatles" "Let It Be" 1970
+# Get leaderboard
+get_meal_leaderboard
 
-# move_song_to_beginning "The Beatles" "Let It Be" 1970
-# move_song_to_end "Queen" "Bohemian Rhapsody" 1975
-# move_song_to_track_number "Led Zeppelin" "Stairway to Heaven" 1971 2
-# swap_songs_in_playlist 1 2
+# Delete a meal
+get_meal_by_id 1
+delete_meal_by_id 1
 
-# get_all_songs_from_playlist
-# get_song_from_playlist_by_track_number 1
-
-# get_playlist_length_duration
-
-# play_current_song
-# rewind_playlist
-
-# play_entire_playlist
-# play_current_song
-# play_rest_of_playlist
-
-# get_song_leaderboard
+# Clear all combatants
+clear_combatants
 
 echo "All tests passed successfully!"
