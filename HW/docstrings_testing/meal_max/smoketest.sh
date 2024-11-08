@@ -209,7 +209,7 @@ check_health
 check_db
 
 # Clear the catalog
-# clear_catalog
+clear_catalog
 
 # Create some meals
 create_meal "Spaghetti" "Italian" 12.50 "MED"
